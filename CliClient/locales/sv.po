@@ -461,13 +461,17 @@ msgstr "Kan inte initiera synkroniseraren."
 msgid "Starting synchronisation..."
 msgstr "Startar synkronisering..."
 
+msgid "Downloading resources..."
+msgstr ""
+
 msgid "Cancelling... Please wait."
 msgstr "Avbryter... vänta."
 
+#, fuzzy
 msgid ""
 "<tag-command> can be \"add\", \"remove\" or \"list\" to assign or remove "
 "[tag] from [note], or to list the notes associated with [tag]. The command "
-"`tag list` can be used to list all the tags."
+"`tag list` can be used to list all the tags (use -l for long option)."
 msgstr ""
 "<tag-command> kan vara \"add\", \"remove\" eller \"list\" för att tilldela "
 "eller ta bort [tag] från [note], eller för att lista anteckningarna som är "
@@ -632,6 +636,10 @@ msgstr "Klipp ut"
 msgid "Paste"
 msgstr "Klistra in"
 
+#, fuzzy
+msgid "Select all"
+msgstr "Välj datum"
+
 msgid "Bold"
 msgstr "Fet"
 
@@ -715,6 +723,9 @@ msgstr "Ja"
 msgid "No"
 msgstr "Nej"
 
+msgid "Token has been copied to the clipboard!"
+msgstr ""
+
 msgid "The web clipper service is enabled and set to auto-start."
 msgstr "Web clipper-tjänsten är aktiverad och inställd för automatisk start."
 
@@ -762,6 +773,21 @@ msgstr "Steg 2: Installera tillägget"
 
 msgid "Download and install the relevant extension for your browser:"
 msgstr "Hämta och installera det relevanta tillägget för din webbläsare:"
+
+#, fuzzy
+msgid "Advanced options"
+msgstr "Visa avancerade inställningar"
+
+msgid "Authorisation token:"
+msgstr ""
+
+msgid "Copy token"
+msgstr ""
+
+msgid ""
+"This authorisation token is only needed to allow third-party applications to "
+"access Joplin."
+msgstr ""
 
 msgid "Check synchronisation configuration"
 msgstr "Kontrollera synkroniseringskonfigurationen"
@@ -929,6 +955,14 @@ msgstr "%s - Kopiera"
 msgid "Switch between note and to-do type"
 msgstr "Växla mellan antecknings- och att-göra-typ"
 
+#, fuzzy
+msgid "Switch to note type"
+msgstr "Växla mellan antecknings- och att-göra-typ"
+
+#, fuzzy
+msgid "Switch to to-do type"
+msgstr "Växla mellan antecknings- och att-göra-typ"
+
 msgid "Copy Markdown link"
 msgstr "Kopiera Markdown-länk"
 
@@ -947,6 +981,15 @@ msgstr ""
 "Det finns för närvarande ingen anteckningsbok. Skapa en genom att klicka på "
 "\"Ny anteckningsbok\"."
 
+msgid "Location"
+msgstr ""
+
+msgid "URL"
+msgstr ""
+
+msgid "Note properties"
+msgstr ""
+
 msgid "Open..."
 msgstr "Öppna..."
 
@@ -962,6 +1005,9 @@ msgstr "Kopiera sökväg till urklipp"
 
 msgid "Copy Link Address"
 msgstr "Kopiera länkadress"
+
+msgid "This attachment is not downloaded or not decrypted yet."
+msgstr ""
 
 #, javascript-format
 msgid "Unsupported link or message: %s"
@@ -1076,6 +1122,14 @@ msgstr "Synkronisera"
 msgid "Notebooks"
 msgstr "Anteckningsböcker"
 
+#, javascript-format
+msgid "Decrypting items: %d/%d"
+msgstr "Dekrypterar objekt: %d/%d"
+
+#, fuzzy, javascript-format
+msgid "Fetching resources: %d"
+msgstr "Resurser: %d."
+
 msgid "Please select where the sync status should be exported to"
 msgstr "Välj vart synkroniseringstillståndet ska exporteras till"
 
@@ -1119,6 +1173,9 @@ msgid ""
 msgstr ""
 "Kan inte uppdatera token: autentiseringsdata saknas. Om du startar "
 "synkroniseringen igen kan det lösa problemet."
+
+msgid "Untitled"
+msgstr "Utan titel"
 
 msgid ""
 "Could not synchronize with OneDrive.\n"
@@ -1167,10 +1224,6 @@ msgstr "Borttagna fjärrobjekt: %d."
 msgid "Fetched items: %d/%d."
 msgstr "Hämtade objekt: %d/%d."
 
-#, javascript-format
-msgid "State: %s."
-msgstr "Tillstånd: %s."
-
 msgid "Cancelling..."
 msgstr "Avbryter..."
 
@@ -1205,10 +1258,6 @@ msgid "Cannot move notebook to this location"
 msgstr "Kan inte flytta anteckningsbok till den här platsen"
 
 #, javascript-format
-msgid "A notebook with this title already exists: \"%s\""
-msgstr "En anteckningsbok med denna titel finns redan: \"%s\""
-
-#, javascript-format
 msgid "Notebooks cannot be named \"%s\", which is a reserved title."
 msgstr ""
 "Anteckningsböcker kan inte namnges \"%s\", vilket är en reserverad titel."
@@ -1221,9 +1270,6 @@ msgstr "uppdaterad datum"
 
 msgid "created date"
 msgstr "Skapad datum"
-
-msgid "Untitled"
-msgstr "Utan titel"
 
 msgid "This note does not have geolocation information."
 msgstr "Denna anteckning har inte geolokaliseringsinformation."
@@ -1286,6 +1332,15 @@ msgstr "Visa fältikon"
 
 msgid "Note: Does not work in all desktop environments."
 msgstr "Obs: Fungerar inte i alla skrivbordsmiljöer."
+
+msgid ""
+"This will allow Joplin to run in the background. It is recommended to enable "
+"this setting so that your notes are constantly being synchronised, thus "
+"reducing the number of conflicts."
+msgstr ""
+
+msgid "Start application minimised in the tray icon"
+msgstr ""
 
 msgid "Global zoom percentage"
 msgstr "Global zoomprocent"
@@ -1356,6 +1411,13 @@ msgstr ""
 msgid "Nextcloud WebDAV URL"
 msgstr "Nextcloud-WebDAV-webbadress"
 
+#, javascript-format
+msgid ""
+"Attention: If you change this location, make sure you copy all your content "
+"to it before syncing, otherwise all files will be removed! See the FAQ for "
+"more details: %s"
+msgstr ""
+
 msgid "Nextcloud username"
 msgstr "Nextcloud-användarnamn"
 
@@ -1393,6 +1455,10 @@ msgstr "Ignorera TLS-certifikatfel"
 msgid "Invalid option value: \"%s\". Possible values are: %s."
 msgstr "Ogiltigt inställningsvärde: \"%s\". Möjliga värden är: %s."
 
+#, javascript-format
+msgid "The tag \"%s\" already exists. Please choose a different name."
+msgstr ""
+
 msgid "Joplin Export File"
 msgstr "Joplin-exporteringsfil"
 
@@ -1404,6 +1470,10 @@ msgstr "Joplin-exporteringskatalog"
 
 msgid "Evernote Export File"
 msgstr "Evernote-exporteringsfil"
+
+#, fuzzy
+msgid "Json Export Directory"
+msgstr "Joplin-exporteringskatalog"
 
 msgid "Directory"
 msgstr "Katalog"
@@ -1479,6 +1549,12 @@ msgstr "Kommande larm"
 msgid "On %s: %s"
 msgstr "På %s: %s"
 
+msgid "Permission to use camera"
+msgstr ""
+
+msgid "Your permission to use your camera is required."
+msgstr ""
+
 msgid "There are currently no notes. Create one by clicking on the (+) button."
 msgstr ""
 "Det finns för närvarande inga anteckningar. Skapa en genom att klicka på (+)-"
@@ -1509,6 +1585,10 @@ msgstr "Flytta %d anteckningar till anteckningsboken \"%s\"?"
 msgid "Press to set the decryption password."
 msgstr "Tryck för att ställa in dekrypteringslösenordet."
 
+#, fuzzy
+msgid "Clear alarm"
+msgstr "Sätt alarm"
+
 msgid "Save alarm"
 msgstr "Spara alarm"
 
@@ -1521,8 +1601,34 @@ msgstr "Bekräfta"
 msgid "Cancel synchronisation"
 msgstr "Avbryt synkronisering"
 
+#, fuzzy
+msgid "Checking... Please wait."
+msgstr "Avbryter... vänta."
+
+#, fuzzy
+msgid "Success! Synchronisation configuration appears to be correct."
+msgstr "Kontrollera synkroniseringskonfigurationen"
+
+msgid ""
+"Error. Please check that URL, username, password, etc. are correct and that "
+"the sync target is accessible. The reported error was:"
+msgstr ""
+
+#, fuzzy
+msgid "The application has been authorised!"
+msgstr "Programmet har godkänts."
+
 #, javascript-format
-msgid "Decrypting items: %d/%d"
+msgid ""
+"Could not authorise application:\n"
+"\n"
+"%s\n"
+"\n"
+"Please try again."
+msgstr ""
+
+#, fuzzy, javascript-format
+msgid "Decrypted items: %s / %s"
 msgstr "Dekrypterar objekt: %d/%d"
 
 msgid "New tags:"
@@ -1637,6 +1743,9 @@ msgstr "Visa metadata"
 msgid "View on map"
 msgstr "Visa på karta"
 
+msgid "Go to source URL"
+msgstr ""
+
 msgid "Delete notebook"
 msgstr "Ta bort anteckningsbok"
 
@@ -1661,3 +1770,9 @@ msgstr ""
 
 msgid "Welcome"
 msgstr "Välkommen"
+
+#~ msgid "State: %s."
+#~ msgstr "Tillstånd: %s."
+
+#~ msgid "A notebook with this title already exists: \"%s\""
+#~ msgstr "En anteckningsbok med denna titel finns redan: \"%s\""

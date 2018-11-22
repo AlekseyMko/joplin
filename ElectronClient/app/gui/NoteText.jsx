@@ -6,7 +6,9 @@ const Search = require('lib/models/Search.js');
 const { time } = require('lib/time-utils.js');
 const Setting = require('lib/models/Setting.js');
 const { IconButton } = require('./IconButton.min.js');
+const { urlDecode, escapeHtml } = require('lib/string-utils');
 const Toolbar = require('./Toolbar.min.js');
+const TagList = require('./TagList.min.js');
 const { connect } = require('react-redux');
 const { _ } = require('lib/locale.js');
 const { reg } = require('lib/registry.js');
@@ -27,6 +29,7 @@ const urlUtils = require('lib/urlUtils');
 const dialogs = require('./dialogs');
 const markdownUtils = require('lib/markdownUtils');
 const ExternalEditWatcher = require('lib/services/ExternalEditWatcher');
+const ResourceFetcher = require('lib/services/ResourceFetcher');
 const { toSystemSlashes, safeFilename } = require('lib/path-utils');
 const { clipboard } = require('electron');
 
@@ -34,6 +37,7 @@ require('brace/mode/markdown');
 // https://ace.c9.io/build/kitchen-sink.html
 // https://highlightjs.org/static/demo/
 require('brace/theme/chrome');
+require('brace/theme/twilight');
 
 class NoteTextComponent extends React.Component {
 
@@ -51,6 +55,7 @@ class NoteTextComponent extends React.Component {
 			scrollHeight: null,
 			editorScrollTop: 0,
 			newNote: null,
+			noteTags: [],
 
 			// If the current note was just created, and the title has never been
 			// changed by the user, this variable contains that note ID. Used
@@ -87,13 +92,14 @@ class NoteTextComponent extends React.Component {
 		this.onNoteTypeToggle_ = (event) => { if (event.noteId === this.props.noteId) this.reloadNote(this.props); }
 		this.onTodoToggle_ = (event) => { if (event.noteId === this.props.noteId) this.reloadNote(this.props); }
 
-		this.onEditorPaste_ = async (event) => {
+		this.onEditorPaste_ = async (event = null) => {
 			const formats = clipboard.availableFormats();
 			for (let i = 0; i < formats.length; i++) {
 				const format = formats[i].toLowerCase();
 				const formatType = format.split('/')[0]
+
 				if (formatType === 'image') {
-					event.preventDefault();
+					if (event) event.preventDefault();
 
 					const image = clipboard.readImage();
 
@@ -114,8 +120,47 @@ class NoteTextComponent extends React.Component {
 			this.setState({ lastKeys: lastKeys });
 		}
 
+		this.onEditorContextMenu_ = (event) => {
+			const menu = new Menu();
+
+			const selectedText = this.selectedText();
+			const clipboardText = clipboard.readText();
+
+			menu.append(new MenuItem({label: _('Cut'), enabled: !!selectedText, click: async () => {
+				this.editorCutText();
+			}}));
+
+			menu.append(new MenuItem({label: _('Copy'), enabled: !!selectedText, click: async () => {
+				this.editorCopyText();
+			}}));
+
+			menu.append(new MenuItem({label: _('Paste'), enabled: true, click: async () => {
+				if (clipboardText) {
+					this.editorPasteText();
+				} else {
+					// To handle pasting images
+					this.onEditorPaste_();
+				}
+			}}));
+
+			menu.popup(bridge().window());
+		}
+
 		this.onDrop_ = async (event) => {
-			const files = event.dataTransfer.files;
+			const dt = event.dataTransfer;
+
+			if (dt.types.indexOf("text/x-jop-note-ids") >= 0) {
+				const noteIds = JSON.parse(dt.getData("text/x-jop-note-ids"));
+				const linkText = [];
+				for (let i = 0; i < noteIds.length; i++) {
+					const note = await Note.load(noteIds[i]);
+					linkText.push(Note.markdownTag(note));
+				}
+
+				this.wrapSelectionWithStrings("", "", '', linkText.join('\n'));
+			}
+
+			const files = dt.files;
 			if (!files || !files.length) return;
 
 			const filesToAttach = [];
@@ -130,6 +175,10 @@ class NoteTextComponent extends React.Component {
 		}
 
 		const updateSelectionRange = () => {
+			if (!this.rawEditor()) {
+				this.selectionRange_ = null;
+				return;
+			}
 
 			const ranges = this.rawEditor().getSelection().getAllRanges();
 			if (!ranges || !ranges.length || !this.state.note) {
@@ -153,11 +202,21 @@ class NoteTextComponent extends React.Component {
 				this.reloadNote(this.props);
 			}
 		}
+
+		this.resourceFetcher_downloadComplete = async (resource) => {
+			if (!this.state.note || !this.state.note.body) return;
+			const resourceIds = await Note.linkedResourceIds(this.state.note.body);
+			if (resourceIds.indexOf(resource.id) >= 0) {
+				this.mdToHtml().clearCache();
+				this.lastSetHtml_ = '';
+				this.updateHtml(this.state.note.body);
+			}
+		}
 	}
 
 	// Note:
 	// - What's called "cursor position" is expressed as { row: x, column: y } and is how Ace Editor get/set the cursor position
-	// - A "range" defines a selection with a start and end cusor position, expressed as { start: <CursorPos>, end: <CursorPos> } 
+	// - A "range" defines a selection with a start and end cusor position, expressed as { start: <CursorPos>, end: <CursorPos> }
 	// - A "text offset" below is the absolute position of the cursor in the string, as would be used in the indexOf() function.
 	// The functions below are used to convert between the different types.
 	rangeToTextOffsets(range, body) {
@@ -205,7 +264,7 @@ class NoteTextComponent extends React.Component {
 			}
 
 			row++;
-			currentOffset += line.length + 1;	
+			currentOffset += line.length + 1;
 		}
 	}
 
@@ -219,11 +278,12 @@ class NoteTextComponent extends React.Component {
 
 	async componentWillMount() {
 		let note = null;
-
+		let noteTags = [];
 		if (this.props.newNote) {
 			note = Object.assign({}, this.props.newNote);
 		} else if (this.props.noteId) {
 			note = await Note.load(this.props.noteId);
+			noteTags = this.props.noteTags || [];
 		}
 
 		const folder = note ? Folder.byId(this.props.folders, note.parent_id) : null;
@@ -233,6 +293,7 @@ class NoteTextComponent extends React.Component {
 			note: note,
 			folder: folder,
 			isLoading: false,
+			noteTags: noteTags
 		});
 
 		this.lastLoadedNoteId_ = note ? note.id : null;
@@ -242,6 +303,9 @@ class NoteTextComponent extends React.Component {
 		eventManager.on('alarmChange', this.onAlarmChange_);
 		eventManager.on('noteTypeToggle', this.onNoteTypeToggle_);
 		eventManager.on('todoToggle', this.onTodoToggle_);
+
+		ResourceFetcher.instance().on('downloadComplete', this.resourceFetcher_downloadComplete);
+		ExternalEditWatcher.instance().on('noteChange', this.externalEditWatcher_noteChange);
 	}
 
 	componentWillUnmount() {
@@ -254,7 +318,8 @@ class NoteTextComponent extends React.Component {
 		eventManager.removeListener('noteTypeToggle', this.onNoteTypeToggle_);
 		eventManager.removeListener('todoToggle', this.onTodoToggle_);
 
-		this.destroyExternalEditWatcher();
+		ResourceFetcher.instance().off('downloadComplete', this.resourceFetcher_downloadComplete);
+		ExternalEditWatcher.instance().off('noteChange', this.externalEditWatcher_noteChange);
 	}
 
 	async saveIfNeeded(saveIfNewNote = false) {
@@ -267,7 +332,7 @@ class NoteTextComponent extends React.Component {
 		}
 		await shared.saveNoteButton_press(this);
 
-		this.externalEditWatcherUpdateNoteFile(this.state.note);
+		ExternalEditWatcher.instance().updateNoteFile(this.state.note);
 	}
 
 	async saveOneProperty(name, value) {
@@ -301,14 +366,15 @@ class NoteTextComponent extends React.Component {
 		let note = null;
 		let loadingNewNote = true;
 		let parentFolder = null;
+		let noteTags = [];
 
 		if (props.newNote) {
 			note = Object.assign({}, props.newNote);
 			this.lastLoadedNoteId_ = null;
-			this.externalEditWatcherStopWatchingAll();
 		} else {
 			noteId = props.noteId;
 			loadingNewNote = stateNoteId !== noteId;
+			noteTags = await Tag.tagsByNoteId(noteId);
 			this.lastLoadedNoteId_ = noteId;
 			note = noteId ? await Note.load(noteId) : null;
 			if (noteId !== this.lastLoadedNoteId_) return; // Race condition - current note was changed while this one was loading
@@ -331,8 +397,6 @@ class NoteTextComponent extends React.Component {
 
 		// Scroll back to top when loading new note
 		if (loadingNewNote) {
-			this.externalEditWatcherStopWatchingAll();
-
 			this.editorMaxScrollTop_ = 0;
 
 			// HACK: To go around a bug in Ace editor, we first set the scroll position to 1
@@ -386,6 +450,7 @@ class NoteTextComponent extends React.Component {
 			webviewReady: webviewReady,
 			folder: parentFolder,
 			lastKeys: [],
+			noteTags: noteTags
 		};
 
 		if (!note) {
@@ -399,6 +464,20 @@ class NoteTextComponent extends React.Component {
 
 		this.setState(newState);
 
+		// https://github.com/laurent22/joplin/pull/893#discussion_r228025210
+		// @Abijeet: Had to add this check. If not, was going into an infinite loop where state was getting updated repeatedly.
+		// Since I'm updating the state, the componentWillReceiveProps was getting triggered again, where nextProps.newNote was still true, causing reloadNote to trigger again and again.
+		// Notes from Laurent: The selected note tags are part of the global Redux state because they need to be updated whenever tags are changed or deleted
+		// anywhere in the app. Thus it's not possible simple to load the tags here (as we won't have a way to know if they're updated afterwards).
+		// Perhaps a better way would be to move that code in the middleware, check for TAGS_DELETE, TAGS_UPDATE, etc. actions and update the
+		// selected note tags accordingly.
+		if (!this.props.newNote) {
+			this.props.dispatch({
+				type: "SET_NOTE_TAGS",
+				items: noteTags,
+			});
+		}
+
 		this.updateHtml(newState.note ? newState.note.body : '');
 	}
 
@@ -407,6 +486,10 @@ class NoteTextComponent extends React.Component {
 			await this.reloadNote(nextProps);
 		} else if ('noteId' in nextProps && nextProps.noteId !== this.props.noteId) {
 			await this.reloadNote(nextProps);
+		} else if ('noteTags' in nextProps && this.areNoteTagsModified(nextProps.noteTags, this.state.noteTags)) {
+			this.setState({
+				noteTags: nextProps.noteTags
+			});
 		}
 
 		if ('syncStarted' in nextProps && !nextProps.syncStarted && !this.isModified()) {
@@ -420,6 +503,24 @@ class NoteTextComponent extends React.Component {
 
 	isModified() {
 		return shared.isModified(this);
+	}
+
+	areNoteTagsModified(newTags, oldTags) {
+		if (!oldTags) return true;
+
+		if (newTags.length !== oldTags.length) return true;
+
+		for (let i = 0; i < newTags.length; ++i) {
+			let currNewTag = newTags[i];
+			for (let j = 0; j < oldTags.length; ++j) {
+				let currOldTag = oldTags[j];
+				if (currOldTag.id === currNewTag.id && currOldTag.updated_time !== currNewTag.updated_time) {
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	refreshNoteMetadata(force = null) {
@@ -466,8 +567,6 @@ class NoteTextComponent extends React.Component {
 
 			const menu = new Menu()
 
-			console.info(itemType);
-
 			if (itemType === "image" || itemType === "resource") {
 				const resource = await Resource.load(arg0.resourceId);
 				const resourcePath = Resource.fullPath(resource);
@@ -509,25 +608,31 @@ class NoteTextComponent extends React.Component {
 			if (!item) throw new Error('No item with ID ' + itemId);
 
 			if (item.type_ === BaseModel.TYPE_RESOURCE) {
+				const localState = await Resource.localState(item);
+				if (localState.fetch_status !== Resource.FETCH_STATUS_DONE || !!item.encryption_blob_encrypted) {
+					bridge().showErrorMessageBox(_('This attachment is not downloaded or not decrypted yet.'));
+					return;
+				}
 				const filePath = Resource.fullPath(item);
 				bridge().openItem(filePath);
 			} else if (item.type_ === BaseModel.TYPE_NOTE) {
 				this.props.dispatch({
-					type: "FOLDER_SELECT",
-					id: item.parent_id,
+					type: "FOLDER_AND_NOTE_SELECT",
+					folderId: item.parent_id,
+					noteId: item.id,
 				});
-
-				setTimeout(() => {
-					this.props.dispatch({
-						type: 'NOTE_SELECT',
-						id: item.id,
-					});
-				}, 10);
 			} else {
 				throw new Error('Unsupported item type: ' + item.type_);
 			}
 		} else if (urlUtils.urlProtocol(msg)) {
-			require('electron').shell.openExternal(msg);
+			if (msg.indexOf('file://') === 0) {
+				// When using the file:// protocol, openExternal doesn't work (does nothing) with URL-encoded paths
+				require('electron').shell.openExternal(urlDecode(msg));
+			} else {
+				require('electron').shell.openExternal(msg);
+			}
+		} else if (msg.indexOf('#') === 0) {
+			// This is an internal anchor, which is handled by the WebView so skip this case
 		} else {
 			bridge().showErrorMessageBox(_('Unsupported link or message: %s', msg));
 		}
@@ -594,6 +699,7 @@ class NoteTextComponent extends React.Component {
 			this.editor_.editor.renderer.off('afterRender', this.onAfterEditorRender_);
 			document.querySelector('#note-editor').removeEventListener('paste', this.onEditorPaste_, true);
 			document.querySelector('#note-editor').removeEventListener('keydown', this.onEditorKeyDown_);
+			document.querySelector('#note-editor').removeEventListener('contextmenu', this.onEditorContextMenu_);
 		}
 
 		this.editor_ = element;
@@ -622,6 +728,7 @@ class NoteTextComponent extends React.Component {
 
 			document.querySelector('#note-editor').addEventListener('paste', this.onEditorPaste_, true);
 			document.querySelector('#note-editor').addEventListener('keydown', this.onEditorKeyDown_);
+			document.querySelector('#note-editor').addEventListener('contextmenu', this.onEditorContextMenu_);
 
 			const lineLeftSpaces = function(line) {
 				let output = '';
@@ -721,13 +828,14 @@ class NoteTextComponent extends React.Component {
 					this.forceUpdate();
 				}, 100);
 			},
-			postMessageSyntax: 'ipcRenderer.sendToHost',
+			postMessageSyntax: 'ipcProxySendToHost',
 		};
 
 		const theme = themeStyle(this.props.theme);
 
 		let bodyToRender = body;
 		if (bodyToRender === null) bodyToRender = this.state.note && this.state.note.body ? this.state.note.body : '';
+		bodyToRender = '<style>' + this.props.customCss + '</style>\n' + bodyToRender;
 		let bodyHtml = '';
 
 		const visiblePanes = this.props.visiblePanes || ['editor', 'viewer'];
@@ -748,20 +856,7 @@ class NoteTextComponent extends React.Component {
 		let commandProcessed = true;
 
 		if (command.name === 'exportPdf' && this.webview_) {
-			const path = bridge().showSaveDialog({
-				filters: [{ name: _('PDF File'), extensions: ['pdf']}],
-				defaultPath: safeFilename(this.state.note.title),
-			});
-
-			if (path) {
-				this.webview_.printToPDF({}, (error, data) => {
-					if (error) {
-						bridge().showErrorMessageBox(error.message);
-					} else {
-						shim.fsDriver().writeFile(path, data, 'buffer');
-					}
-				});
-			}
+			this.commandSavePdf();
 		} else if (command.name === 'print' && this.webview_) {
 			this.webview_.print();
 		} else if (command.name === 'textBold') {
@@ -826,42 +921,54 @@ class NoteTextComponent extends React.Component {
 		});
 	}
 
-	externalEditWatcher() {
-		if (!this.externalEditWatcher_) {
-			this.externalEditWatcher_ = new ExternalEditWatcher((action) => { return this.props.dispatch(action) });
-			this.externalEditWatcher_.setLogger(reg.logger());
-			this.externalEditWatcher_.on('noteChange', this.externalEditWatcher_noteChange);
+	commandSavePdf() {
+		const path = bridge().showSaveDialog({
+			filters: [{ name: _('PDF File'), extensions: ['pdf']}],
+			defaultPath: safeFilename(this.state.note.title),
+		});
+
+		if (path) {
+			// Temporarily add a <h2> title in the webview
+			const newHtml = this.insertHtmlHeading_(this.lastSetHtml_, this.state.note.title);
+			this.webview_.send('setHtml', newHtml);
+
+			setTimeout(() => {
+				this.webview_.printToPDF({}, (error, data) => {
+					if (error) {
+						bridge().showErrorMessageBox(error.message);
+					} else {
+						shim.fsDriver().writeFile(path, data, 'buffer');
+					}
+
+					// Refresh the webview, restoring the previous content
+					this.lastSetHtml_ = '';
+					this.forceUpdate();
+				});
+			}, 100);
 		}
-
-		return this.externalEditWatcher_;
 	}
 
-	externalEditWatcherUpdateNoteFile(note) {
-		if (this.externalEditWatcher_) this.externalEditWatcher().updateNoteFile(note);
-	}
-
-	externalEditWatcherStopWatchingAll() {
-		if (this.externalEditWatcher_) this.externalEditWatcher().stopWatchingAll();
-	}
-
-	destroyExternalEditWatcher() {
-		if (!this.externalEditWatcher_) return;
-
-		this.externalEditWatcher_.off('noteChange', this.externalEditWatcher_noteChange);
-		this.externalEditWatcher_.stopWatchingAll();
-		this.externalEditWatcher_ = null;
+	insertHtmlHeading_(s, heading) {
+		const tag = 'h2';
+		const marker = '<!-- START_OF_DOCUMENT -->'
+		let splitStyle = s.split(marker);
+		const index = splitStyle.length > 1 ? 1 : 0;
+		let toInsert = escapeHtml(heading);
+		toInsert = '<' + tag + '>' + toInsert + '</' + tag + '>';
+		splitStyle[index] = toInsert + splitStyle[index];
+		return splitStyle.join(marker);
 	}
 
 	async commandStartExternalEditing() {
 		try {
-			await this.externalEditWatcher().openAndWatch(this.state.note);
+			await ExternalEditWatcher.instance().openAndWatch(this.state.note);
 		} catch (error) {
 			bridge().showErrorMessageBox(_('Error opening note in editor: %s', error.message));
 		}
 	}
 
 	async commandStopExternalEditing() {
-		this.externalEditWatcherStopWatchingAll();
+		ExternalEditWatcher.instance().stopWatching(this.state.note.id);
 	}
 
 	async commandSetTags() {
@@ -894,6 +1001,49 @@ class NoteTextComponent extends React.Component {
 		return lines[row];
 	}
 
+	selectedText() {
+		if (!this.state.note || !this.state.note.body) return '';
+
+		const selection = this.textOffsetSelection();
+		if (!selection || selection.start === selection.end) return '';
+
+		return this.state.note.body.substr(selection.start, selection.end - selection.start);
+	}
+
+	editorCopyText() {
+		clipboard.writeText(this.selectedText());
+	}
+
+	editorCutText() {
+		const selectedText = this.selectedText();
+		if (!selectedText) return;
+
+		clipboard.writeText(selectedText);
+
+		const s = this.textOffsetSelection();
+		if (!s || s.start === s.end) return '';
+
+		const s1 = this.state.note.body.substr(0, s.start);
+		const s2 = this.state.note.body.substr(s.end);
+
+		shared.noteComponent_change(this, 'body', s1 + s2);
+
+		this.updateEditorWithDelay((editor) => {
+			const range = this.selectionRange_;
+			range.setStart(range.start.row, range.start.column);
+			range.setEnd(range.start.row, range.start.column);
+			editor.getSession().getSelection().setSelectionRange(range, false);
+			editor.focus();
+		}, 10);
+	}
+
+	editorPasteText() {
+		const s = this.textOffsetSelection();
+		const s1 = this.state.note.body.substr(0, s.start);
+		const s2 = this.state.note.body.substr(s.end);
+		this.wrapSelectionWithStrings("", "", '', clipboard.readText());
+	}
+
 	selectionRangePreviousLine() {
 		if (!this.selectionRange_) return '';
 		const row = this.selectionRange_.start.row;
@@ -906,16 +1056,20 @@ class NoteTextComponent extends React.Component {
 		return this.lineAtRow(row);
 	}
 
-	wrapSelectionWithStrings(string1, string2 = '', defaultText = '') {
+	textOffsetSelection() {
+		return this.selectionRange_ ? this.rangeToTextOffsets(this.selectionRange_, this.state.note.body) : null;
+	}
+
+	wrapSelectionWithStrings(string1, string2 = '', defaultText = '', replacementText = '') {
 		if (!this.rawEditor() || !this.state.note) return;
 
-		const selection = this.selectionRange_ ? this.rangeToTextOffsets(this.selectionRange_, this.state.note.body) : null;
+		const selection = this.textOffsetSelection();
 
 		let newBody = this.state.note.body;
 
 		if (selection && selection.start !== selection.end) {
 			const s1 = this.state.note.body.substr(0, selection.start);
-			const s2 = this.state.note.body.substr(selection.start, selection.end - selection.start);
+			const s2 = replacementText ? replacementText : this.state.note.body.substr(selection.start, selection.end - selection.start);
 			const s3 = this.state.note.body.substr(selection.end);
 			newBody = s1 + string1 + s2 + string2 + s3;
 
@@ -926,6 +1080,11 @@ class NoteTextComponent extends React.Component {
 				end: { row: r.end.row, column: r.end.column + string1.length},
 			};
 
+			if (replacementText) {
+				const diff = replacementText.length - (selection.end - selection.start);
+				newRange.end.column += diff;
+			}
+
 			this.updateEditorWithDelay((editor) => {
 				const range = this.selectionRange_;
 				range.setStart(newRange.start.row, newRange.start.column);
@@ -934,19 +1093,23 @@ class NoteTextComponent extends React.Component {
 				editor.focus();
 			});
 		} else {
+			let middleText = replacementText ? replacementText : defaultText;
 			const textOffset = this.currentTextOffset();
 			const s1 = this.state.note.body.substr(0, textOffset);
 			const s2 = this.state.note.body.substr(textOffset);
-			newBody = s1 + string1 + defaultText + string2 + s2;
+			newBody = s1 + string1 + middleText + string2 + s2;
 
 			const p = this.textOffsetToCursorPosition(textOffset + string1.length, newBody);
 			const newRange = {
 				start: { row: p.row, column: p.column },
-				end: { row: p.row, column: p.column + defaultText.length },
+				end: { row: p.row, column: p.column + middleText.length },
 			};
 
+			// BUG!! If replacementText contains newline characters, the logic
+			// to select the new text will not work.
+
 			this.updateEditorWithDelay((editor) => {
-				if (defaultText && newRange) {
+				if (middleText && newRange) {
 					const range = this.selectionRange_;
 					range.setStart(newRange.start.row, newRange.start.column);
 					range.setEnd(newRange.end.row, newRange.end.column);
@@ -1059,6 +1222,25 @@ class NoteTextComponent extends React.Component {
 			tooltip: _('Italic'),
 			iconName: 'fa-italic',
 			onClick: () => { return this.commandTextItalic(); },
+		});
+
+		toolbarItems.push({
+			type: 'separator',
+		});
+
+		toolbarItems.push({
+			tooltip: _('Note properties'),
+			iconName: 'fa-info-circle',
+			onClick: () => {
+				const n = this.state.note;
+				if (!n || !n.id) return;
+
+				this.props.dispatch({
+					type: 'WINDOW_COMMAND',
+					name: 'commandNoteProperties',
+					noteId: n.id,
+				});
+			},
 		});
 
 		toolbarItems.push({
@@ -1212,13 +1394,21 @@ class NoteTextComponent extends React.Component {
 			paddingLeft: 8,
 			paddingRight: 8,
 			marginRight: rootStyle.paddingLeft,
+			color: theme.color,
+			backgroundColor: theme.backgroundColor,
+			border: '1px solid',
+			borderColor: theme.dividerColor,
 		};
 
 		const toolbarStyle = {
-			marginBottom: 10,
 		};
 
-		const bottomRowHeight = rootStyle.height - titleBarStyle.height - titleBarStyle.marginBottom - titleBarStyle.marginTop - theme.toolbarHeight - toolbarStyle.marginBottom;
+		const tagStyle = {
+			marginBottom: 10,
+			height: 30
+		};
+
+		const bottomRowHeight = rootStyle.height - titleBarStyle.height - titleBarStyle.marginBottom - titleBarStyle.marginTop - theme.toolbarHeight - tagStyle.height - tagStyle.marginBottom;
 
 		const viewerStyle = {
 			width: Math.floor(innerWidth / 2),
@@ -1240,6 +1430,9 @@ class NoteTextComponent extends React.Component {
 			paddingTop: paddingTop + 'px',
 			lineHeight: theme.textAreaLineHeight + 'px',
 			fontSize: theme.fontSize + 'px',
+			color: theme.color,
+			backgroundColor: theme.backgroundColor,
+			editorTheme: theme.editorTheme,
 		};
 
 		if (visiblePanes.indexOf('viewer') < 0) {
@@ -1251,7 +1444,11 @@ class NoteTextComponent extends React.Component {
 		}
 
 		if (visiblePanes.indexOf('editor') < 0) {
-			editorStyle.display = 'none';
+			// Note: Ideally we'd set the display to "none" to take the editor out
+			// of the DOM but if we do that, certain things won't work, in particular
+			// things related to scroll, which are based on the editor. See
+			// editorScrollTop_, restoreScrollTop_, etc.
+			editorStyle.width = 0;
 			viewerStyle.width = innerWidth;
 		}
 
@@ -1266,7 +1463,8 @@ class NoteTextComponent extends React.Component {
 
 			const htmlHasChanged = this.lastSetHtml_ !== html;
 			 if (htmlHasChanged) {
-				this.webview_.send('setHtml', html);
+				let options = {codeTheme: theme.codeThemeCss};
+				this.webview_.send('setHtml', html, options);
 				this.lastSetHtml_ = html;
 			}
 
@@ -1295,6 +1493,11 @@ class NoteTextComponent extends React.Component {
 			placeholder={ this.props.newNote ? _('Creating new %s...', isTodo ? _('to-do') : _('note')) : '' }
 		/>
 
+		const tagList = <TagList
+			style={tagStyle}
+			items={this.state.noteTags}
+		/>;
+
 		const titleBarMenuButton = <IconButton style={{
 			display: 'flex',
 		}} iconName="fa-caret-down" theme={this.props.theme} onClick={() => { this.itemContextMenu() }} />
@@ -1305,6 +1508,7 @@ class NoteTextComponent extends React.Component {
 			style={viewerStyle}
 			preload="gui/note-viewer/preload.js"
 			src="gui/note-viewer/index.html"
+			webpreferences="contextIsolation"
 			ref={(elem) => { this.webview_ref(elem); } }
 		/>
 
@@ -1333,7 +1537,7 @@ class NoteTextComponent extends React.Component {
 		const editor =  <AceEditor
 			value={body}
 			mode="markdown"
-			theme="chrome"
+			theme={editorRootStyle.editorTheme}
 			style={editorRootStyle}
 			width={editorStyle.width + 'px'}
 			height={editorStyle.height + 'px'}
@@ -1365,6 +1569,7 @@ class NoteTextComponent extends React.Component {
 					{ false ? titleBarMenuButton : null }
 				</div>
 				{ toolbar }
+				{ tagList }
 				{ editor }
 				{ viewer }
 			</div>
@@ -1376,6 +1581,7 @@ class NoteTextComponent extends React.Component {
 const mapStateToProps = (state) => {
 	return {
 		noteId: state.selectedNoteIds.length === 1 ? state.selectedNoteIds[0] : null,
+		noteTags: state.selectedNoteTags,
 		folderId: state.selectedFolderId,
 		itemType: state.selectedItemType,
 		folders: state.folders,
@@ -1388,6 +1594,7 @@ const mapStateToProps = (state) => {
 		searches: state.searches,
 		selectedSearchId: state.selectedSearchId,
 		watchedNoteFiles: state.watchedNoteFiles,
+		customCss: state.customCss,
 	};
 };
 

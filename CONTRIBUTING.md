@@ -17,3 +17,12 @@ Again, please check that it has not already been requested. If it has, simply **
 If you want to add a new feature, consider asking about it before implementing it or checking existing discussions to make sure it is within the scope of the project. Of course you are free to create the pull request directly but it is not guaranteed it is going to be accepted.
 
 Building the apps is relatively easy - please [see the build instructions](https://github.com/laurent22/joplin/blob/master/BUILD.md) for more details.
+
+Pull requests that automatically change many files tend to be rejected (for example changes that automatically update the code styling, or to add new lines to many files, or to automatically convert images to a different format) so if you have such a pull request in mind, please discuss it first in the forum.
+
+# Coding style
+
+There are only two rules, but not following them means the pull request will not be accepted (it can be accepted once the issues are fixed):
+
+- **Please use tabs, NOT spaces.**
+- **Please do not add or remove optional characters, such as spaces or colons.** Please setup your editor so that it only changes what you are working on and is not making automated changes elsewhere. The reason for this is that small white space changes make diff hard to read and can cause needless conflicts.

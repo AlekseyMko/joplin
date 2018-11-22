@@ -5,6 +5,7 @@ const { SideBar } = require('./SideBar.min.js');
 const { NoteList } = require('./NoteList.min.js');
 const { NoteText } = require('./NoteText.min.js');
 const { PromptDialog } = require('./PromptDialog.min.js');
+const NotePropertiesDialog = require('./NotePropertiesDialog.min.js');
 const Setting = require('lib/models/Setting.js');
 const BaseModel = require('lib/BaseModel.js');
 const Tag = require('lib/models/Tag.js');
@@ -19,13 +20,24 @@ const eventManager = require('../eventManager');
 
 class MainScreenComponent extends React.Component {
 
+	constructor() {
+		super();
+
+		this.notePropertiesDialog_close = this.notePropertiesDialog_close.bind(this);
+	}
+
+	notePropertiesDialog_close() {
+		this.setState({ notePropertiesDialogOptions: {} });
+	}
+
 	componentWillMount() {
 		this.setState({
 			promptOptions: null,
 			modalLayer: {
 				visible: false,
 				message: '',
-			}
+			},
+			notePropertiesDialogOptions: {},
 		});
 	}
 
@@ -108,7 +120,7 @@ class MainScreenComponent extends React.Component {
 			});
 		} else if (command.name === 'setTags') {
 			const tags = await Tag.tagsByNoteId(command.noteId);
-			const tagTitles = tags.map((a) => { return a.title });
+			const tagTitles = tags.map((a) => { return a.title }).sort();
 
 			this.setState({
 				promptOptions: {
@@ -146,7 +158,7 @@ class MainScreenComponent extends React.Component {
 				},
 			});
 		} else if (command.name === 'renameTag') {
-			const tag = await Tag.load(command.id);			
+			const tag = await Tag.load(command.id);
 			if(!tag) return;
 
 			this.setState({
@@ -161,12 +173,12 @@ class MainScreenComponent extends React.Component {
 							} catch (error) {
 								bridge().showErrorMessageBox(error.message);
 							}
-						}						
+						}
 						this.setState({promptOptions: null });
 					}
 				}
 			})
-		
+
 		} else if (command.name === 'search') {
 
 			if (!this.searchId_) this.searchId_ = uuid.create();
@@ -189,6 +201,13 @@ class MainScreenComponent extends React.Component {
 				});
 			}
 
+		} else if (command.name === 'commandNoteProperties') {
+			this.setState({
+				notePropertiesDialogOptions: {
+					noteId: command.noteId,
+					visible: true,
+				},
+			});
 		} else if (command.name === 'toggleVisiblePanes') {
 			this.toggleVisiblePanes();
 		} else if (command.name === 'toggleSidebar') {
@@ -317,14 +336,17 @@ class MainScreenComponent extends React.Component {
 	}
 
 	render() {
-		const style = this.props.style;
+		const theme = themeStyle(this.props.theme);
+		const style = Object.assign({
+				color: theme.color,
+				backgroundColor: theme.backgroundColor,
+			}, this.props.style);
 		const promptOptions = this.state.promptOptions;
 		const folders = this.props.folders;
 		const notes = this.props.notes;
 		const messageBoxVisible = this.props.hasDisabledSyncItems || this.props.showMissingMasterKeyMessage;
 		const sidebarVisibility = this.props.sidebarVisibility;
 		const styles = this.styles(this.props.theme, style.width, style.height, messageBoxVisible, sidebarVisibility);
-		const theme = themeStyle(this.props.theme);
 		const selectedFolderId = this.props.selectedFolderId;
 		const onConflictFolder = this.props.selectedFolderId === Folder.conflictFolderId();
 
@@ -412,9 +434,18 @@ class MainScreenComponent extends React.Component {
 
 		const modalLayerStyle = Object.assign({}, styles.modalLayer, { display: this.state.modalLayer.visible ? 'block' : 'none' });
 
+		const notePropertiesDialogOptions = this.state.notePropertiesDialogOptions;
+
 		return (
 			<div style={style}>
 				<div style={modalLayerStyle}>{this.state.modalLayer.message}</div>
+
+				<NotePropertiesDialog
+					theme={this.props.theme}
+					noteId={notePropertiesDialogOptions.noteId}
+					visible={!!notePropertiesDialogOptions.visible}
+					onClose={this.notePropertiesDialog_close}
+				/>
 
 				<PromptDialog
 					autocomplete={promptOptions && ('autocomplete' in promptOptions) ? promptOptions.autocomplete : null}
@@ -427,6 +458,7 @@ class MainScreenComponent extends React.Component {
 					visible={!!this.state.promptOptions}
 					buttons={promptOptions && ('buttons' in promptOptions) ? promptOptions.buttons : null}
 					inputType={promptOptions && ('inputType' in promptOptions) ? promptOptions.inputType : null} />
+
 				<Header style={styles.header} showBackButton={false} items={headerItems} />
 				{messageComp}
 				<SideBar style={styles.sideBar} />

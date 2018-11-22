@@ -161,6 +161,8 @@ function flagImageUrl(locale) {
 	if (locale === 'ca') return baseUrl + '/es/catalonia.png';
 	if (locale === 'ko') return baseUrl + '/country-4x3/kr.png';
 	if (locale === 'sv') return baseUrl + '/country-4x3/se.png';
+	if (locale === 'no') return baseUrl + '/country-4x3/no.png';
+	if (locale === 'ro') return baseUrl + '/country-4x3/ro.png';
 	return baseUrl + '/country-4x3/' + countryCodeOnly(locale).toLowerCase() + '.png'
 }
 
@@ -207,6 +209,7 @@ async function main() {
 		rnDir + '/lib/models/*.js',
 		rnDir + '/lib/services/*.js',
 		rnDir + '/lib/components/*.js',
+		rnDir + '/lib/components/shared/*.js',
 		rnDir + '/lib/components/screens/*.js',
 	]);
 

@@ -3,6 +3,7 @@ const BaseItem = require('lib/models/BaseItem.js');
 const NoteTag = require('lib/models/NoteTag.js');
 const Note = require('lib/models/Note.js');
 const { time } = require('lib/time-utils.js');
+const { _ } = require('lib/locale');
 
 class Tag extends BaseItem {
 
@@ -14,12 +15,6 @@ class Tag extends BaseItem {
 		return BaseModel.TYPE_TAG;
 	}
 
-	static async serialize(item, type = null, shownKeys = null) {
-		let fieldNames = this.fieldNames();
-		fieldNames.push('type_');
-		return super.serialize(item, 'tag', fieldNames);
-	}
-
 	static async noteIds(tagId) {
 		let rows = await this.db().selectAll('SELECT note_id FROM note_tags WHERE tag_id = ?', [tagId]);
 		let output = [];
@@ -29,13 +24,15 @@ class Tag extends BaseItem {
 		return output;
 	}
 
-	static async notes(tagId) {
+	static async notes(tagId, options = null) {
+		if (options === null) options = {};
+
 		let noteIds = await this.noteIds(tagId);
 		if (!noteIds.length) return [];
 
-		return Note.search({
+		return Note.search(Object.assign({}, options, {
 			conditions: ['id IN ("' + noteIds.join('","') + '")'],
-		});
+		}))
 	}
 
 	// Untag all the notes and delete tag
@@ -83,7 +80,7 @@ class Tag extends BaseItem {
 		}
 
 		this.dispatch({
-			type: 'TAG_UPDATE_ONE',
+			type: 'NOTE_TAG_REMOVE',
 			item: await Tag.load(tagId),
 		});
 	}
@@ -153,6 +150,9 @@ class Tag extends BaseItem {
 		if (options && options.userSideValidation) {
 			if ('title' in o) {
 				o.title = o.title.trim().toLowerCase();
+
+				const existingTag = await Tag.loadByTitle(o.title);
+				if (existingTag && existingTag.id !== o.id) throw new Error(_('The tag "%s" already exists. Please choose a different name.', o.title));
 			}
 		}
 

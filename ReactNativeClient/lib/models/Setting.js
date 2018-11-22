@@ -53,7 +53,7 @@ class Setting extends BaseModel {
 				options[Setting.TIME_FORMAT_2] = time.formatMsToLocal(now, Setting.TIME_FORMAT_2);
 				return options;
 			}},
-			'theme': { value: Setting.THEME_LIGHT, type: Setting.TYPE_INT, public: true, appTypes: ['mobile'], isEnum: true, label: () => _('Theme'), options: () => {
+			'theme': { value: Setting.THEME_LIGHT, type: Setting.TYPE_INT, public: true, appTypes: ['mobile', 'desktop'], isEnum: true, label: () => _('Theme'), options: () => {
 				let output = {};
 				output[Setting.THEME_LIGHT] = _('Light');
 				output[Setting.THEME_DARK] = _('Dark');
@@ -90,15 +90,17 @@ class Setting extends BaseModel {
 			// Might be fixed in Electron 18.x but no non-beta release yet. So for now
 			// by default we disable it on Linux.
 			'showTrayIcon': { value: platform !== 'linux', type: Setting.TYPE_BOOL, public: true, appTypes: ['desktop'], label: () => _('Show tray icon'), description: () => {
-				return platform === 'linux' ? _('Note: Does not work in all desktop environments.') : null;
+				return platform === 'linux' ? _('Note: Does not work in all desktop environments.') : _('This will allow Joplin to run in the background. It is recommended to enable this setting so that your notes are constantly being synchronised, thus reducing the number of conflicts.');
 			}},
+
+			'startMinimized': { value: false, type: Setting.TYPE_BOOL, public: true, appTypes: ['desktop'], label: () => _('Start application minimised in the tray icon') },
 
 			'collapsedFolderIds': { value: [], type: Setting.TYPE_ARRAY, public: false },
 			
 			'encryption.enabled': { value: false, type: Setting.TYPE_BOOL, public: false },
 			'encryption.activeMasterKeyId': { value: '', type: Setting.TYPE_STRING, public: false },
-			'encryption.passwordCache': { value: {}, type: Setting.TYPE_OBJECT, public: false },
-			'style.zoom': {value: "100", type: Setting.TYPE_INT, public: true, appTypes: ['desktop'], label: () => _('Global zoom percentage'), minimum: "50", maximum: "500", step: "10"},
+			'encryption.passwordCache': { value: {}, type: Setting.TYPE_OBJECT, public: false, secure: true },
+			'style.zoom': {value: 100, type: Setting.TYPE_INT, public: true, appTypes: ['desktop'], label: () => _('Global zoom percentage'), minimum: 50, maximum: 500, step: 10},
 			'style.editor.fontFamily': {value: "", type: Setting.TYPE_STRING, public: true, appTypes: ['desktop'], label: () => _('Editor font family'), description: () => _('This must be *monospace* font or it will not work properly. If the font is incorrect or empty, it will default to a generic monospace font.')},
 			'autoUpdateEnabled': { value: true, type: Setting.TYPE_BOOL, public: true, appTypes: ['desktop'], label: () => _('Automatically update the application') },
 			'clipperServer.autoStart': { value: false, type: Setting.TYPE_BOOL, public: false },
@@ -131,11 +133,11 @@ class Setting extends BaseModel {
 				return value ? rtrimSlashes(value) : '';
 			}, public: true, label: () => _('Directory to synchronise with (absolute path)'), description: (appType) => { return appType !== 'cli' ? null : _('The path to synchronise with when file system synchronisation is enabled. See `sync.target`.'); } },
 
-			'sync.5.path': { value: '', type: Setting.TYPE_STRING, show: (settings) => { return settings['sync.target'] == SyncTargetRegistry.nameToId('nextcloud') }, public: true, label: () => _('Nextcloud WebDAV URL') },
+			'sync.5.path': { value: '', type: Setting.TYPE_STRING, show: (settings) => { return settings['sync.target'] == SyncTargetRegistry.nameToId('nextcloud') }, public: true, label: () => _('Nextcloud WebDAV URL'), description: () => _('Attention: If you change this location, make sure you copy all your content to it before syncing, otherwise all files will be removed! See the FAQ for more details: %s', 'https://joplin.cozic.net/faq/') },
 			'sync.5.username': { value: '', type: Setting.TYPE_STRING, show: (settings) => { return settings['sync.target'] == SyncTargetRegistry.nameToId('nextcloud') }, public: true, label: () => _('Nextcloud username') },
 			'sync.5.password': { value: '', type: Setting.TYPE_STRING, show: (settings) => { return settings['sync.target'] == SyncTargetRegistry.nameToId('nextcloud') }, public: true, label: () => _('Nextcloud password'), secure: true },
 
-			'sync.6.path': { value: '', type: Setting.TYPE_STRING, show: (settings) => { return settings['sync.target'] == SyncTargetRegistry.nameToId('webdav') }, public: true, label: () => _('WebDAV URL') },
+			'sync.6.path': { value: '', type: Setting.TYPE_STRING, show: (settings) => { return settings['sync.target'] == SyncTargetRegistry.nameToId('webdav') }, public: true, label: () => _('WebDAV URL'), description: () => _('Attention: If you change this location, make sure you copy all your content to it before syncing, otherwise all files will be removed! See the FAQ for more details: %s', 'https://joplin.cozic.net/faq/') },
 			'sync.6.username': { value: '', type: Setting.TYPE_STRING, show: (settings) => { return settings['sync.target'] == SyncTargetRegistry.nameToId('webdav') }, public: true, label: () => _('WebDAV username') },
 			'sync.6.password': { value: '', type: Setting.TYPE_STRING, show: (settings) => { return settings['sync.target'] == SyncTargetRegistry.nameToId('webdav') }, public: true, label: () => _('WebDAV password'), secure: true },
 
@@ -152,6 +154,8 @@ class Setting extends BaseModel {
 
 			'net.customCertificates': { value: '', type: Setting.TYPE_STRING, show: (settings) => { return [SyncTargetRegistry.nameToId('nextcloud'), SyncTargetRegistry.nameToId('webdav')].indexOf(settings['sync.target']) >= 0 }, public: true, appTypes: ['desktop', 'cli'], label: () => _('Custom TLS certificates'), description: () => _('Comma-separated list of paths to directories to load the certificates from, or path to individual cert files. For example: /my/cert_dir, /other/custom.pem. Note that if you make changes to the TLS settings, you must save your changes before clicking on "Check synchronisation configuration".') },
 			'net.ignoreTlsErrors': { value: false, type: Setting.TYPE_BOOL, show: (settings) => { return [SyncTargetRegistry.nameToId('nextcloud'), SyncTargetRegistry.nameToId('webdav')].indexOf(settings['sync.target']) >= 0 }, public: true, appTypes: ['desktop', 'cli'], label: () => _('Ignore TLS certificate errors') },
+		
+			'api.token': { value: null, type: Setting.TYPE_STRING, public: false },
 		};
 
 		return this.metadata_;

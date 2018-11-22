@@ -33,6 +33,7 @@ const SyncTargetNextcloud = require('lib/SyncTargetNextcloud.js');
 const SyncTargetWebDAV = require('lib/SyncTargetWebDAV.js');
 const SyncTargetDropbox = require('lib/SyncTargetDropbox.js');
 const EncryptionService = require('lib/services/EncryptionService');
+const ResourceFetcher = require('lib/services/ResourceFetcher');
 const DecryptionWorker = require('lib/services/DecryptionWorker');
 const BaseService = require('lib/services/BaseService');
 
@@ -50,10 +51,10 @@ class BaseApplication {
 		this.dbLogger_ = new Logger();
 		this.eventEmitter_ = new EventEmitter();
 
-		// Note: this is basically a cache of state.selectedFolderId. It should *only* 
+		// Note: this is basically a cache of state.selectedFolderId. It should *only*
 		// be derived from the state and not set directly since that would make the
 		// state and UI out of sync.
-		this.currentFolder_ = null; 
+		this.currentFolder_ = null;
 	}
 
 	logger() {
@@ -70,7 +71,7 @@ class BaseApplication {
 
 	async refreshCurrentFolder() {
 		let newFolder = null;
-		
+
 		if (this.currentFolder_) newFolder = await Folder.load(this.currentFolder_.id);
 		if (!newFolder) newFolder = await Folder.defaultFolder();
 
@@ -99,7 +100,7 @@ class BaseApplication {
 		while (argv.length) {
 			let arg = argv[0];
 			let nextArg = argv.length >= 2 ? argv[1] : null;
-			
+
 			if (arg == '--profile') {
 				if (!nextArg) throw new JoplinError(_('Usage: %s', '--profile <dir-path>'), 'flagError');
 				matched.profileDir = nextArg;
@@ -180,10 +181,10 @@ class BaseApplication {
 		process.exit(code);
 	}
 
-	async refreshNotes(state) {
+	async refreshNotes(state, useSelectedNoteId = false) {
 		let parentType = state.notesParentType;
 		let parentId = null;
-		
+
 		if (parentType === 'Folder') {
 			parentId = state.selectedFolderId;
 			parentType = BaseModel.TYPE_FOLDER;
@@ -215,7 +216,7 @@ class BaseApplication {
 			if (parentType === Folder.modelType()) {
 				notes = await Note.previews(parentId, options);
 			} else if (parentType === Tag.modelType()) {
-				notes = await Tag.notes(parentId);
+				notes = await Tag.notes(parentId, options);
 			} else if (parentType === BaseModel.TYPE_SEARCH) {
 				let fields = Note.previewFields();
 				let search = BaseModel.byId(state.searches, parentId);
@@ -232,10 +233,17 @@ class BaseApplication {
 			notesSource: source,
 		});
 
-		this.store().dispatch({
-			type: 'NOTE_SELECT',
-			id: notes.length ? notes[0].id : null,
-		});
+		if (useSelectedNoteId) {
+			this.store().dispatch({
+				type: 'NOTE_SELECT',
+				id: state.selectedNoteIds && state.selectedNoteIds.length ? state.selectedNoteIds[0] : null,
+			});
+		} else {
+			this.store().dispatch({
+				type: 'NOTE_SELECT',
+				id: notes.length ? notes[0].id : null,
+			});
+		}
 	}
 
 	reducerActionToString(action) {
@@ -272,13 +280,16 @@ class BaseApplication {
 		const result = next(action);
 		const newState = store.getState();
 		let refreshNotes = false;
+		let refreshNotesUseSelectedNoteId = false;
 
 		reduxSharedMiddleware(store, next, action);
 
-		if (action.type == 'FOLDER_SELECT' || action.type === 'FOLDER_DELETE' || (action.type === 'SEARCH_UPDATE' && newState.notesParentType === 'Folder')) {
+		if (action.type == 'FOLDER_SELECT' || action.type === 'FOLDER_DELETE' || action.type === 'FOLDER_AND_NOTE_SELECT' || (action.type === 'SEARCH_UPDATE' && newState.notesParentType === 'Folder')) {
 			Setting.setValue('activeFolderId', newState.selectedFolderId);
 			this.currentFolder_ = newState.selectedFolderId ? await Folder.load(newState.selectedFolderId) : null;
 			refreshNotes = true;
+
+			if (action.type === 'FOLDER_AND_NOTE_SELECT') refreshNotesUseSelectedNoteId = true;
 		}
 
 		if (this.hasGui() && ((action.type == 'SETTING_UPDATE_ONE' && action.key == 'uncompletedTodosOnTop') || action.type == 'SETTING_UPDATE_ALL')) {
@@ -302,7 +313,7 @@ class BaseApplication {
 		}
 
 		if (refreshNotes) {
-			await this.refreshNotes(newState);
+			await this.refreshNotes(newState, refreshNotesUseSelectedNoteId);
 		}
 
 		if ((action.type == 'SETTING_UPDATE_ONE' && (action.key == 'dateFormat' || action.key == 'timeFormat')) || (action.type == 'SETTING_UPDATE_ALL')) {
@@ -356,6 +367,10 @@ class BaseApplication {
 			DecryptionWorker.instance().scheduleStart();
 		}
 
+		if (this.hasGui() && action.type === 'SYNC_CREATED_RESOURCE') {
+			ResourceFetcher.instance().queueDownload(action.id);
+		}
+
 	  	return result;
 	}
 
@@ -374,6 +389,7 @@ class BaseApplication {
 		reg.dispatch = this.store().dispatch;
 		BaseSyncTarget.dispatch = this.store().dispatch;
 		DecryptionWorker.instance().dispatch = this.store().dispatch;
+		ResourceFetcher.instance().dispatch = this.store().dispatch;
 	}
 
 	async readFlagsFromFile(flagPath) {
@@ -388,7 +404,7 @@ class BaseApplication {
 		flags.splice(0, 0, 'node');
 
 		flags = await this.handleStartFlags_(flags, false);
-		
+
 		return flags.matched;
 	}
 
@@ -454,7 +470,7 @@ class BaseApplication {
 		initArgs = Object.assign(initArgs, extraFlags);
 
 		this.logger_.addTarget('file', { path: profileDir + '/log.txt' });
-		//this.logger_.addTarget('console');
+		// if (Setting.value('env') === 'dev') this.logger_.addTarget('console');
 		this.logger_.setLevel(initArgs.logLevel);
 
 		reg.setLogger(this.logger_);
@@ -494,12 +510,25 @@ class BaseApplication {
 			setLocale(Setting.value('locale'));
 		}
 
+		if (!Setting.value('api.token')) {
+			EncryptionService.instance().randomHexString(64).then((token) => {
+				Setting.setValue('api.token', token);
+			});
+		}
+
+		time.setDateFormat(Setting.value('dateFormat'));
+		time.setTimeFormat(Setting.value('timeFormat'));
+
 		BaseService.logger_ = this.logger_;
 		EncryptionService.instance().setLogger(this.logger_);
 		BaseItem.encryptionService_ = EncryptionService.instance();
 		DecryptionWorker.instance().setLogger(this.logger_);
 		DecryptionWorker.instance().setEncryptionService(EncryptionService.instance());
 		await EncryptionService.instance().loadMasterKeysFromSettings();
+
+		ResourceFetcher.instance().setFileApi(() => { return reg.syncTarget().fileApi() });
+		ResourceFetcher.instance().setLogger(this.logger_);
+		ResourceFetcher.instance().start();
 
 		let currentFolderId = Setting.value('activeFolderId');
 		let currentFolder = null;

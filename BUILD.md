@@ -9,8 +9,6 @@
 	echo 'export PATH="/usr/local/opt/gettext/bin:$PATH"' >> ~/.bash_profile
 	source ~/.bash_profile
 
-If you get a node-gyp related error you might need to manually install it: `npm install -g node-gyp`
-
 ## Linux and Windows (WSL) dependencies
 
 - Install yarn - https://yarnpkg.com/lang/en/docs/install/
@@ -37,6 +35,10 @@ yarn dist
 
 If there's an error `while loading shared libraries: libgconf-2.so.4: cannot open shared object file: No such file or directory`, run `sudo apt-get install libgconf-2-4`
 
+If you get a node-gyp related error you might need to manually install it: `npm install -g node-gyp`.
+
+If you get the error `libtool: unrecognized option '-static'`, follow the instructions [in this post](https://stackoverflow.com/a/38552393/561309) to use the correct libtool version.
+
 That will create the executable file in the `dist` directory.
 
 From `/ElectronClient` you can also run `run.sh` to run the app for testing.
@@ -55,6 +57,8 @@ yarn dist
 If node-gyp does not works (MSBUILD: error MSB3428: Could not load the Visual C++ component "VCBuild.exe"), you might need to install the `windows-build-tools` using `npm install --global windows-build-tools`.
 
 If `yarn dist` fails, it may need administrative rights.
+
+The [building\_win32\_tips on this page](./readme/building_win32_tips.md) might be helpful.
 
 # Building the Mobile application
 

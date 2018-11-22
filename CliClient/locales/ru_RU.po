@@ -456,13 +456,17 @@ msgstr "Не удалось инициировать синхронизацию.
 msgid "Starting synchronisation..."
 msgstr "Начало синхронизации..."
 
+msgid "Downloading resources..."
+msgstr ""
+
 msgid "Cancelling... Please wait."
 msgstr "Отмена... Пожалуйста, ожидайте."
 
+#, fuzzy
 msgid ""
 "<tag-command> can be \"add\", \"remove\" or \"list\" to assign or remove "
 "[tag] from [note], or to list the notes associated with [tag]. The command "
-"`tag list` can be used to list all the tags."
+"`tag list` can be used to list all the tags (use -l for long option)."
 msgstr ""
 "<tag-command> может быть «add», «remove» или «list», чтобы назначить или "
 "убрать [tag] с [note], или чтобы вывести список заметок, ассоциированых с "
@@ -626,6 +630,10 @@ msgstr "Вырезать"
 msgid "Paste"
 msgstr "Вставить"
 
+#, fuzzy
+msgid "Select all"
+msgstr "Выбрать дату"
+
 msgid "Bold"
 msgstr ""
 
@@ -709,6 +717,9 @@ msgstr "Да"
 msgid "No"
 msgstr "Нет"
 
+msgid "Token has been copied to the clipboard!"
+msgstr ""
+
 msgid "The web clipper service is enabled and set to auto-start."
 msgstr ""
 
@@ -750,6 +761,21 @@ msgid "Step 2: Install the extension"
 msgstr ""
 
 msgid "Download and install the relevant extension for your browser:"
+msgstr ""
+
+#, fuzzy
+msgid "Advanced options"
+msgstr "Показывать расширенные настройки"
+
+msgid "Authorisation token:"
+msgstr ""
+
+msgid "Copy token"
+msgstr ""
+
+msgid ""
+"This authorisation token is only needed to allow third-party applications to "
+"access Joplin."
 msgstr ""
 
 msgid "Check synchronisation configuration"
@@ -918,6 +944,14 @@ msgid "Switch between note and to-do type"
 msgstr "Переключить тип между заметкой и задачей"
 
 #, fuzzy
+msgid "Switch to note type"
+msgstr "Переключить тип между заметкой и задачей"
+
+#, fuzzy
+msgid "Switch to to-do type"
+msgstr "Переключить тип между заметкой и задачей"
+
+#, fuzzy
 msgid "Copy Markdown link"
 msgstr "Markdown"
 
@@ -934,6 +968,15 @@ msgid ""
 "There is currently no notebook. Create one by clicking on \"New notebook\"."
 msgstr "Сейчас здесь нет блокнотов. Создайте новый нажав «Новый блокнот»."
 
+msgid "Location"
+msgstr ""
+
+msgid "URL"
+msgstr ""
+
+msgid "Note properties"
+msgstr ""
+
 msgid "Open..."
 msgstr "Открыть..."
 
@@ -948,6 +991,9 @@ msgid "Copy path to clipboard"
 msgstr ""
 
 msgid "Copy Link Address"
+msgstr ""
+
+msgid "This attachment is not downloaded or not decrypted yet."
 msgstr ""
 
 #, javascript-format
@@ -1065,6 +1111,14 @@ msgstr "Синхронизировать"
 msgid "Notebooks"
 msgstr "Блокноты"
 
+#, fuzzy, javascript-format
+msgid "Decrypting items: %d/%d"
+msgstr "Получено элементов: %d/%d."
+
+#, fuzzy, javascript-format
+msgid "Fetching resources: %d"
+msgstr "Ресурсов: %d."
+
 msgid "Please select where the sync status should be exported to"
 msgstr "Выберите, куда должен быть экспортирован статус синхронизации"
 
@@ -1108,6 +1162,9 @@ msgid ""
 msgstr ""
 "Не удалось обновить токен: отсутствуют данные аутентификации. Повторный "
 "запуск синхронизации может решить проблему."
+
+msgid "Untitled"
+msgstr "Без имени"
 
 msgid ""
 "Could not synchronize with OneDrive.\n"
@@ -1156,10 +1213,6 @@ msgstr "Удалено удалённых элементов: %d."
 msgid "Fetched items: %d/%d."
 msgstr "Получено элементов: %d/%d."
 
-#, fuzzy, javascript-format
-msgid "State: %s."
-msgstr "Статус: «%s»."
-
 msgid "Cancelling..."
 msgstr "Отмена..."
 
@@ -1195,10 +1248,6 @@ msgid "Cannot move notebook to this location"
 msgstr "Не удалось переместить заметку в блокнот «%s»"
 
 #, javascript-format
-msgid "A notebook with this title already exists: \"%s\""
-msgstr "Блокнот с таким названием уже существует: «%s»"
-
-#, javascript-format
 msgid "Notebooks cannot be named \"%s\", which is a reserved title."
 msgstr "Блокнот не может быть назван «%s», это зарезервированное название."
 
@@ -1213,9 +1262,6 @@ msgstr "Обновлено: %d."
 #, fuzzy
 msgid "created date"
 msgstr "Создано: %d."
-
-msgid "Untitled"
-msgstr "Без имени"
 
 msgid "This note does not have geolocation information."
 msgstr "Эта заметка не содержит информации о геолокации."
@@ -1278,6 +1324,15 @@ msgid "Show tray icon"
 msgstr "Показывать иконку в панели задач"
 
 msgid "Note: Does not work in all desktop environments."
+msgstr ""
+
+msgid ""
+"This will allow Joplin to run in the background. It is recommended to enable "
+"this setting so that your notes are constantly being synchronised, thus "
+"reducing the number of conflicts."
+msgstr ""
+
+msgid "Start application minimised in the tray icon"
 msgstr ""
 
 msgid "Global zoom percentage"
@@ -1350,6 +1405,13 @@ msgstr ""
 msgid "Nextcloud WebDAV URL"
 msgstr "Nextcloud WebDAV URL"
 
+#, javascript-format
+msgid ""
+"Attention: If you change this location, make sure you copy all your content "
+"to it before syncing, otherwise all files will be removed! See the FAQ for "
+"more details: %s"
+msgstr ""
+
 msgid "Nextcloud username"
 msgstr "Имя пользователя Nextcloud"
 
@@ -1382,6 +1444,10 @@ msgstr ""
 msgid "Invalid option value: \"%s\". Possible values are: %s."
 msgstr "Неверное значение параметра: «%s». Доступные значения: %s."
 
+#, javascript-format
+msgid "The tag \"%s\" already exists. Please choose a different name."
+msgstr ""
+
 msgid "Joplin Export File"
 msgstr "Файл экспорта Joplin"
 
@@ -1393,6 +1459,10 @@ msgstr "Папка экспорта Joplin"
 
 msgid "Evernote Export File"
 msgstr "Файл экспорта Evernote"
+
+#, fuzzy
+msgid "Json Export Directory"
+msgstr "Папка экспорта Joplin"
 
 msgid "Directory"
 msgstr "Директория"
@@ -1469,6 +1539,12 @@ msgstr "Грядущие напоминания"
 msgid "On %s: %s"
 msgstr "В %s: %s"
 
+msgid "Permission to use camera"
+msgstr ""
+
+msgid "Your permission to use your camera is required."
+msgstr ""
+
 msgid "There are currently no notes. Create one by clicking on the (+) button."
 msgstr "Сейчас здесь нет заметок. Создаёте новую, нажав кнопку (+)."
 
@@ -1498,6 +1574,10 @@ msgid "Press to set the decryption password."
 msgstr "Нажмите, чтобы установить пароль для расшифровки."
 
 #, fuzzy
+msgid "Clear alarm"
+msgstr "Установить напоминание"
+
+#, fuzzy
 msgid "Save alarm"
 msgstr "Установить напоминание"
 
@@ -1510,8 +1590,34 @@ msgstr "Подтвердить"
 msgid "Cancel synchronisation"
 msgstr "Отменить синхронизацию"
 
+#, fuzzy
+msgid "Checking... Please wait."
+msgstr "Отмена... Пожалуйста, ожидайте."
+
+#, fuzzy
+msgid "Success! Synchronisation configuration appears to be correct."
+msgstr "Проверить настройки синхронизации"
+
+msgid ""
+"Error. Please check that URL, username, password, etc. are correct and that "
+"the sync target is accessible. The reported error was:"
+msgstr ""
+
+#, fuzzy
+msgid "The application has been authorised!"
+msgstr "Приложение успешно авторизовано."
+
+#, javascript-format
+msgid ""
+"Could not authorise application:\n"
+"\n"
+"%s\n"
+"\n"
+"Please try again."
+msgstr ""
+
 #, fuzzy, javascript-format
-msgid "Decrypting items: %d/%d"
+msgid "Decrypted items: %s / %s"
 msgstr "Получено элементов: %d/%d."
 
 msgid "New tags:"
@@ -1618,6 +1724,9 @@ msgstr "Показать метаданные"
 msgid "View on map"
 msgstr "Посмотреть на карте"
 
+msgid "Go to source URL"
+msgstr ""
+
 msgid "Delete notebook"
 msgstr "Удалить блокнот"
 
@@ -1639,6 +1748,13 @@ msgstr "У вас сейчас нет блокнота. Создайте его 
 
 msgid "Welcome"
 msgstr "Добро пожаловать"
+
+#, fuzzy
+#~ msgid "State: %s."
+#~ msgstr "Статус: «%s»."
+
+#~ msgid "A notebook with this title already exists: \"%s\""
+#~ msgstr "Блокнот с таким названием уже существует: «%s»"
 
 #~ msgid "Searches"
 #~ msgstr "Запросы"

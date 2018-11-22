@@ -16,6 +16,12 @@ const Mark = require('mark.js/dist/mark.min.js');
 
 class NoteListComponent extends React.Component {
 
+	constructor() {
+		super();
+
+		this.itemRenderer = this.itemRenderer.bind(this);
+	}
+
 	style() {
 		const theme = themeStyle(this.props.theme);
 
@@ -97,13 +103,33 @@ class NoteListComponent extends React.Component {
 				}
 			}}));
 
-			menu.append(new MenuItem({label: _('Switch between note and to-do type'), click: async () => {
-				for (let i = 0; i < noteIds.length; i++) {
-					const note = await Note.load(noteIds[i]);
-					await Note.save(Note.toggleIsTodo(note), { userSideValidation: true });
-					eventManager.emit('noteTypeToggle', { noteId: note.id });
+			if (noteIds.length <= 1) {
+				menu.append(new MenuItem({label: _('Switch between note and to-do type'), click: async () => {
+					for (let i = 0; i < noteIds.length; i++) {
+						const note = await Note.load(noteIds[i]);
+						await Note.save(Note.toggleIsTodo(note), { userSideValidation: true });
+						eventManager.emit('noteTypeToggle', { noteId: note.id });
+					}
+				}}));
+			} else {
+				const switchNoteType = async (noteIds, type) => {
+					for (let i = 0; i < noteIds.length; i++) {
+						const note = await Note.load(noteIds[i]);
+						const newNote = Note.changeNoteType(note, type);
+						if (newNote === note) continue;
+						await Note.save(newNote, { userSideValidation: true });
+						eventManager.emit('noteTypeToggle', { noteId: note.id });
+					}
 				}
-			}}));
+
+				menu.append(new MenuItem({label: _('Switch to note type'), click: async () => {
+					await switchNoteType(noteIds, 'note');
+				}}));
+
+				menu.append(new MenuItem({label: _('Switch to to-do type'), click: async () => {
+					await switchNoteType(noteIds, 'todo');
+				}}));
+			}
 
 			menu.append(new MenuItem({label: _('Copy Markdown link'), click: async () => {
 				const { clipboard } = require('electron');
@@ -149,7 +175,10 @@ class NoteListComponent extends React.Component {
 		menu.popup(bridge().window());
 	}
 
-	itemRenderer(item, theme, width) {
+	itemRenderer(item) {
+		const theme = themeStyle(this.props.theme);
+		const width = this.props.style.width;
+
 		const onTitleClick = async (event, item) => {
 			if (event.ctrlKey) {
 				event.preventDefault();
@@ -249,6 +278,14 @@ class NoteListComponent extends React.Component {
 			titleComp = <span>{displayTitle}</span>
 		}
 
+		const watchedIconStyle = {
+			paddingRight: 4,
+			color: theme.color,
+		};
+		const watchedIcon = this.props.watchedNoteFiles.indexOf(item.id) < 0 ? null : (
+			<i style={watchedIconStyle} className={"fa fa-external-link"}></i>
+		);
+
 		// Need to include "todo_completed" in key so that checkbox is updated when
 		// item is changed via sync.		
 		return <div key={item.id + '_' + item.todo_completed} style={style}>
@@ -263,6 +300,7 @@ class NoteListComponent extends React.Component {
 				onDragStart={(event) => onDragStart(event) }
 				data-id={item.id}
 			>
+			{watchedIcon}
 			{titleComp}
 			</a>
 		</div>
@@ -293,7 +331,7 @@ class NoteListComponent extends React.Component {
 				style={style}
 				className={"note-list"}
 				items={notes}
-				itemRenderer={ (item) => { return this.itemRenderer(item, theme, style.width) } }
+				itemRenderer={this.itemRenderer}
 			></ItemList>
 		);
 	}
@@ -309,6 +347,7 @@ const mapStateToProps = (state) => {
 		notesParentType: state.notesParentType,
 		searches: state.searches,
 		selectedSearchId: state.selectedSearchId,
+		watchedNoteFiles: state.watchedNoteFiles,
 	};
 };
 

@@ -2,7 +2,7 @@
 # Copyright (C) YEAR Laurent Cozic
 # This file is distributed under the same license as the Joplin-CLI package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-# 
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: Joplin-CLI 1.0.0\n"
@@ -191,8 +191,8 @@ msgid ""
 "complete database including notebooks, notes, tags and resources."
 msgstr ""
 "Esporta i dati da Joplin nella directory selezionata. Come impostazione "
-"predefinita verrà esportato il database completo, inclusi i taccuini, "
-"note, etichette e risorse."
+"predefinita verrà esportato il database completo, inclusi i taccuini, note, "
+"etichette e risorse."
 
 #, javascript-format
 msgid "Destination format: %s"
@@ -328,8 +328,9 @@ msgid ""
 "to-dos, while `-ttd` would display notes and to-dos."
 msgstr ""
 "Mostra solo gli elementi del tipo specificato. Possono essere `n` per le "
-"note, `t` per le \"Cose-da-fare\" o `nt` per note e \"Cose-da-fare\". (es. `-tt` mostrerà "
-"solo le \"Cose-da-fare\", mentre `-ttd` mostrerà sia note che \"Cose-da-fare\"."
+"note, `t` per le \"Cose-da-fare\" o `nt` per note e \"Cose-da-fare\". (es. `-"
+"tt` mostrerà solo le \"Cose-da-fare\", mentre `-ttd` mostrerà sia note che "
+"\"Cose-da-fare\"."
 
 msgid "Either \"text\" or \"json\""
 msgstr "Sia \"testo\" che \"json\""
@@ -460,13 +461,17 @@ msgstr "Non è possibile inizializzare il sincronizzatore."
 msgid "Starting synchronisation..."
 msgstr "Inizio sincronizzazione..."
 
+msgid "Downloading resources..."
+msgstr ""
+
 msgid "Cancelling... Please wait."
 msgstr "Cancellazione... Attendere per favore."
 
+#, fuzzy
 msgid ""
 "<tag-command> can be \"add\", \"remove\" or \"list\" to assign or remove "
 "[tag] from [note], or to list the notes associated with [tag]. The command "
-"`tag list` can be used to list all the tags."
+"`tag list` can be used to list all the tags (use -l for long option)."
 msgstr ""
 "<tag-command> può essere \"add\", \"remove\" or \"list\" per assegnare o "
 "rimuovere [tag] da [note], o per mostrare le note associate a [tag]. Il "
@@ -483,9 +488,9 @@ msgid ""
 "convert the to-do back to a regular note."
 msgstr ""
 "<todo-command> può essere \"toggle\" or \"clear\". Usa \"toggle\" per "
-"modifica lo stato di \"Cose-da-fare\" in completato/non completato (se l'oggetto "
-"è una normale nota, questa verrà convertita in un \"Cose-da-fare\"). Usa \"clear\" "
-"convertire i \"Cose-da-fare\" in normali note."
+"modifica lo stato di \"Cose-da-fare\" in completato/non completato (se "
+"l'oggetto è una normale nota, questa verrà convertita in un \"Cose-da-fare"
+"\"). Usa \"clear\" convertire i \"Cose-da-fare\" in normali note."
 
 msgid "Marks a to-do as non-completed."
 msgstr "Marca un \"Cose-da-fare\" come non completata."
@@ -624,6 +629,10 @@ msgstr "Taglia"
 msgid "Paste"
 msgstr "Incolla"
 
+#, fuzzy
+msgid "Select all"
+msgstr "Seleziona la data"
+
 msgid "Bold"
 msgstr "Grasseto"
 
@@ -707,6 +716,9 @@ msgstr "Sì"
 msgid "No"
 msgstr "No"
 
+msgid "Token has been copied to the clipboard!"
+msgstr ""
+
 msgid "The web clipper service is enabled and set to auto-start."
 msgstr ""
 "Il servizio Web clipper è abilitato e impostato per l'avvio automatico."
@@ -755,6 +767,21 @@ msgstr "Passaggio 2: installare l'estensione"
 
 msgid "Download and install the relevant extension for your browser:"
 msgstr "Scarica e installa l'estensione adatta per il tuo browser:"
+
+#, fuzzy
+msgid "Advanced options"
+msgstr "Mostra opzioni avanzate"
+
+msgid "Authorisation token:"
+msgstr ""
+
+msgid "Copy token"
+msgstr ""
+
+msgid ""
+"This authorisation token is only needed to allow third-party applications to "
+"access Joplin."
+msgstr ""
 
 msgid "Check synchronisation configuration"
 msgstr "Controlla la configurazione della sincronizzazione"
@@ -921,6 +948,14 @@ msgstr "%s - Copia"
 msgid "Switch between note and to-do type"
 msgstr "Converti nota in \"Cose-da-fare\" e viceversa"
 
+#, fuzzy
+msgid "Switch to note type"
+msgstr "Converti nota in \"Cose-da-fare\" e viceversa"
+
+#, fuzzy
+msgid "Switch to to-do type"
+msgstr "Converti nota in \"Cose-da-fare\" e viceversa"
+
 msgid "Copy Markdown link"
 msgstr "Copia il link Markdown"
 
@@ -939,6 +974,15 @@ msgstr ""
 "Al momento non ci sono Taccuini. Creane uno facendo clic su \"Nuovo Taccuino"
 "\"."
 
+msgid "Location"
+msgstr ""
+
+msgid "URL"
+msgstr ""
+
+msgid "Note properties"
+msgstr ""
+
 msgid "Open..."
 msgstr "Apri ..."
 
@@ -954,6 +998,9 @@ msgstr "Copia il percorso negli appunti"
 
 msgid "Copy Link Address"
 msgstr "Copia l'indirizzo del link"
+
+msgid "This attachment is not downloaded or not decrypted yet."
+msgstr ""
 
 #, javascript-format
 msgid "Unsupported link or message: %s"
@@ -1069,6 +1116,14 @@ msgstr "Sincronizza"
 msgid "Notebooks"
 msgstr "Taccuini"
 
+#, javascript-format
+msgid "Decrypting items: %d/%d"
+msgstr "Decrittografia Elementi: %d/%d"
+
+#, fuzzy, javascript-format
+msgid "Fetching resources: %d"
+msgstr "Risorse: %d."
+
 msgid "Please select where the sync status should be exported to"
 msgstr ""
 
@@ -1112,6 +1167,9 @@ msgid ""
 msgstr ""
 "Non è possibile aggiornare il token. mancano i dati di autenticazione. "
 "Ricominciare la sincronizzazione da capo potrebbe risolvere il problema."
+
+msgid "Untitled"
+msgstr "Senza titolo"
 
 msgid ""
 "Could not synchronize with OneDrive.\n"
@@ -1160,10 +1218,6 @@ msgstr "Elementi remoti eliminati: %d."
 msgid "Fetched items: %d/%d."
 msgstr "Elementi recuperati: %d/%d."
 
-#, javascript-format
-msgid "State: %s."
-msgstr "Stato: %s."
-
 msgid "Cancelling..."
 msgstr "Cancellazione..."
 
@@ -1198,10 +1252,6 @@ msgid "Cannot move notebook to this location"
 msgstr "Impossibile spostare il Taccuino in questa posizione"
 
 #, javascript-format
-msgid "A notebook with this title already exists: \"%s\""
-msgstr "Esiste già un Taccuino col titolo \"%s\""
-
-#, javascript-format
 msgid "Notebooks cannot be named \"%s\", which is a reserved title."
 msgstr "I blocchi non possono essere chiamati \"%s\". È un titolo riservato."
 
@@ -1213,9 +1263,6 @@ msgstr "Data di aggiornamento"
 
 msgid "created date"
 msgstr "Data di creazione"
-
-msgid "Untitled"
-msgstr "Senza titolo"
 
 msgid "This note does not have geolocation information."
 msgstr "Questa nota non ha informazione sulla geolocalizzazione."
@@ -1278,6 +1325,15 @@ msgstr "Visualizza tray icon"
 
 msgid "Note: Does not work in all desktop environments."
 msgstr "Nota: non funziona in tutti gli ambienti desktop."
+
+msgid ""
+"This will allow Joplin to run in the background. It is recommended to enable "
+"this setting so that your notes are constantly being synchronised, thus "
+"reducing the number of conflicts."
+msgstr ""
+
+msgid "Start application minimised in the tray icon"
+msgstr ""
 
 msgid "Global zoom percentage"
 msgstr "Percentuale di zoom globale"
@@ -1348,6 +1404,13 @@ msgstr ""
 msgid "Nextcloud WebDAV URL"
 msgstr "URL Nextcloud WebDAV"
 
+#, javascript-format
+msgid ""
+"Attention: If you change this location, make sure you copy all your content "
+"to it before syncing, otherwise all files will be removed! See the FAQ for "
+"more details: %s"
+msgstr ""
+
 msgid "Nextcloud username"
 msgstr "Nome Utente Nextcloud"
 
@@ -1385,6 +1448,10 @@ msgstr "Ignora gli errori del certificato TLS"
 msgid "Invalid option value: \"%s\". Possible values are: %s."
 msgstr "Oprione non valida: \"%s\". I valori possibili sono: %s."
 
+#, javascript-format
+msgid "The tag \"%s\" already exists. Please choose a different name."
+msgstr ""
+
 msgid "Joplin Export File"
 msgstr "Esposta files di Joplin"
 
@@ -1396,6 +1463,10 @@ msgstr "Cartella di esportazione di Joplin"
 
 msgid "Evernote Export File"
 msgstr "Esporta files di Evernote"
+
+#, fuzzy
+msgid "Json Export Directory"
+msgstr "Cartella di esportazione di Joplin"
 
 msgid "Directory"
 msgstr "Cartella"
@@ -1471,6 +1542,12 @@ msgstr "Avviso imminente"
 msgid "On %s: %s"
 msgstr "Su %s: %s"
 
+msgid "Permission to use camera"
+msgstr ""
+
+msgid "Your permission to use your camera is required."
+msgstr ""
+
 msgid "There are currently no notes. Create one by clicking on the (+) button."
 msgstr "Al momento non ci sono note. Creane una cliccando sul bottone (+)."
 
@@ -1499,6 +1576,10 @@ msgstr "Spostare le note %d sul Taccuino \"%s\"?"
 msgid "Press to set the decryption password."
 msgstr "Premere per impostare la password di decrittografia."
 
+#, fuzzy
+msgid "Clear alarm"
+msgstr "Imposta Allarme"
+
 msgid "Save alarm"
 msgstr "Salva Allarme"
 
@@ -1511,8 +1592,34 @@ msgstr "Conferma"
 msgid "Cancel synchronisation"
 msgstr "Cancella la sincronizzazione"
 
+#, fuzzy
+msgid "Checking... Please wait."
+msgstr "Cancellazione... Attendere per favore."
+
+#, fuzzy
+msgid "Success! Synchronisation configuration appears to be correct."
+msgstr "Controlla la configurazione della sincronizzazione"
+
+msgid ""
+"Error. Please check that URL, username, password, etc. are correct and that "
+"the sync target is accessible. The reported error was:"
+msgstr ""
+
+#, fuzzy
+msgid "The application has been authorised!"
+msgstr "L'applicazione è stata autorizzata con successo."
+
 #, javascript-format
-msgid "Decrypting items: %d/%d"
+msgid ""
+"Could not authorise application:\n"
+"\n"
+"%s\n"
+"\n"
+"Please try again."
+msgstr ""
+
+#, fuzzy, javascript-format
+msgid "Decrypted items: %s / %s"
 msgstr "Decrittografia Elementi: %d/%d"
 
 msgid "New tags:"
@@ -1627,6 +1734,9 @@ msgstr "Mostra i metadati"
 msgid "View on map"
 msgstr "Guarda sulla mappa"
 
+msgid "Go to source URL"
+msgstr ""
+
 msgid "Delete notebook"
 msgstr "Cancella Taccuino"
 
@@ -1649,6 +1759,12 @@ msgstr ""
 
 msgid "Welcome"
 msgstr "Benvenuto"
+
+#~ msgid "State: %s."
+#~ msgstr "Stato: %s."
+
+#~ msgid "A notebook with this title already exists: \"%s\""
+#~ msgstr "Esiste già un Taccuino col titolo \"%s\""
 
 #~ msgid ""
 #~ "Benvenuto su Joplin!\n"
@@ -1683,15 +1799,14 @@ msgstr "Benvenuto"
 #~ msgid ""
 #~ "File \"%s\" will be imported into existing notebook \"%s\". Continue?"
 #~ msgstr ""
-#~ "Il file \"%s\" sarà importato nel taccuino esistente \"%s\". "
-#~ "Continuare?"
+#~ "Il file \"%s\" sarà importato nel taccuino esistente \"%s\". Continuare?"
 
 #~ msgid ""
 #~ "New notebook \"%s\" will be created and file \"%s\" will be imported into "
 #~ "it. Continue?"
 #~ msgstr ""
-#~ "Un nuovo taccuino \"%s\" sarà creato e al suo interno verrà importato "
-#~ "il file \"%s\" . Continuare?"
+#~ "Un nuovo taccuino \"%s\" sarà creato e al suo interno verrà importato il "
+#~ "file \"%s\" . Continuare?"
 
 #~ msgid "Import Evernote notes"
 #~ msgstr "Importa le note da Evernote"

@@ -27,6 +27,7 @@ const defaultState = {
 	appState: 'starting',
 	hasDisabledSyncItems: false,
 	newNote: null,
+	customCss: '',
 	collapsedFolderIds: [],
 	clipperServer: {
 		startState: 'idle',
@@ -36,6 +37,10 @@ const defaultState = {
 		state: 'idle',
 		itemIndex: 0,
 		itemCount: 0,
+	},
+	selectedNoteTags: [],
+	resourceFetcher: {
+		toFetchCount: 0,
 	},
 };
 
@@ -122,11 +127,14 @@ function handleItemDelete(state, action) {
 	return newState;
 }
 
-function updateOneItem(state, action) {
+function updateOneItem(state, action, keyName = '') {
 	let itemsKey = null;
-	if (action.type === 'TAG_UPDATE_ONE') itemsKey = 'tags';
-	if (action.type === 'FOLDER_UPDATE_ONE') itemsKey = 'folders';
-	if (action.type === 'MASTERKEY_UPDATE_ONE') itemsKey = 'masterKeys';
+	if (keyName) itemsKey = keyName;
+	else {
+		if (action.type === 'TAG_UPDATE_ONE') itemsKey = 'tags';
+		if (action.type === 'FOLDER_UPDATE_ONE') itemsKey = 'folders';
+		if (action.type === 'MASTERKEY_UPDATE_ONE') itemsKey = 'masterKeys';
+	}
 
 	let newItems = state[itemsKey].splice(0);
 	let item = action.item;
@@ -164,8 +172,25 @@ function defaultNotesParentType(state, exclusion) {
 	return newNotesParentType;
 }
 
+function changeSelectedFolder(state, action) {
+	newState = Object.assign({}, state);
+	newState.selectedFolderId = 'folderId' in action ? action.folderId : action.id;
+	if (!newState.selectedFolderId) {
+		newState.notesParentType = defaultNotesParentType(state, 'Folder');
+	} else {
+		newState.notesParentType = 'Folder';
+	}
+	return newState;
+}
+
 function changeSelectedNotes(state, action) {
-	const noteIds = 'id' in action ? (action.id ? [action.id] : []) : action.ids;
+	let noteIds = [];
+	if (action.id) noteIds = [action.id];
+	if (action.ids) noteIds = action.ids;
+	if (action.noteId) noteIds = [action.noteId];
+
+	// const noteIds = 'id' in action ? (action.id ? [action.id] : []) : action.ids;
+
 	let newState = Object.assign({}, state);
 
 	if (action.type === 'NOTE_SELECT') {
@@ -212,6 +237,17 @@ function changeSelectedNotes(state, action) {
 	}
 
 	throw new Error('Unreachable');
+}
+
+function removeItemFromArray(array, property, value) {
+	for (let i = 0; i !== array.length; ++i) {
+		let currentItem = array[i];
+		if (currentItem[property] === value) {
+			array.splice(i, 1);
+			break;
+		}
+	}
+	return array;
 }
 
 const reducer = (state = defaultState, action) => {
@@ -263,13 +299,14 @@ const reducer = (state = defaultState, action) => {
 
 			case 'FOLDER_SELECT':
 
-				newState = Object.assign({}, state);
-				newState.selectedFolderId = action.id;
-				if (!action.id) {
-					newState.notesParentType = defaultNotesParentType(state, 'Folder');
-				} else {
-					newState.notesParentType = 'Folder';
-				}
+				newState = changeSelectedFolder(state, action);
+				break;
+
+			case 'FOLDER_AND_NOTE_SELECT':
+
+				newState = changeSelectedFolder(state, action);
+				const noteSelectAction = Object.assign({}, action, { type: 'NOTE_SELECT'});
+				newState = changeSelectedNotes(newState, noteSelectAction);
 				break;
 
 			case 'SETTING_UPDATE_ALL':
@@ -359,6 +396,7 @@ const reducer = (state = defaultState, action) => {
 			case 'TAG_DELETE':
 
 				newState = handleItemDelete(state, action);
+				newState.selectedNoteTags = removeItemFromArray(newState.selectedNoteTags.splice(0), 'id', action.id);
 				break;
 
 			case 'FOLDER_UPDATE_ALL':
@@ -405,6 +443,18 @@ const reducer = (state = defaultState, action) => {
 				break;
 
 			case 'TAG_UPDATE_ONE':
+
+				newState = updateOneItem(state, action);
+				newState = updateOneItem(newState, action, 'selectedNoteTags');
+				break;
+
+			case 'NOTE_TAG_REMOVE':
+
+				newState = updateOneItem(state, action, 'tags');
+				let tagRemoved = action.item;
+				newState.selectedNoteTags = removeItemFromArray(newState.selectedNoteTags.splice(0), 'id', tagRemoved.id);;
+				break;
+
 			case 'FOLDER_UPDATE_ONE':
 			case 'MASTERKEY_UPDATE_ONE':
 
@@ -506,7 +556,7 @@ const reducer = (state = defaultState, action) => {
 			case 'SEARCH_DELETE':
 
 				newState = handleItemDelete(state, action);
-				break;			
+				break;
 
 			case 'SEARCH_SELECT':
 
@@ -555,6 +605,25 @@ const reducer = (state = defaultState, action) => {
 					decryptionWorker[n] = action[n];
 				}
 				newState.decryptionWorker = decryptionWorker;
+				break;
+
+			case 'RESOURCE_FETCHER_SET':
+
+				newState = Object.assign({}, state);
+				const rf = Object.assign({}, action);
+				delete rf.type;
+				newState.resourceFetcher = rf;
+				break;
+
+			case 'LOAD_CUSTOM_CSS':
+
+				newState = Object.assign({}, state);
+				newState.customCss = action.css;
+				break;
+        
+			case 'SET_NOTE_TAGS':
+				newState = Object.assign({}, state);
+				newState.selectedNoteTags = action.items;
 				break;
 
 		}

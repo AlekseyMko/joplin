@@ -92,6 +92,16 @@ class BaseModel {
 		return this.db().tableFields(this.tableName());
 	}
 
+	static removeUnknownFields(model) {
+		const newModel = {};
+		for (let n in model) {
+			if (!model.hasOwnProperty(n)) continue;
+			if (!this.hasField(n) && n !== 'type_') continue;
+			newModel[n] = model[n];
+		}
+		return newModel;
+	}
+
 	static new() {
 		let fields = this.fields();
 		let output = {};
@@ -287,7 +297,7 @@ class BaseModel {
 		}
 
 		// Remove fields that are not in the `fields` list, if provided.
-		// Note that things like update_time, user_update_time will still
+		// Note that things like update_time, user_updated_time will still
 		// be part of the final list of fields if autoTimestamp is on.
 		// id also will stay.
 		if (!options.isNew && options.fields) {
@@ -314,6 +324,10 @@ class BaseModel {
 		// The purpose of user_updated_time is to allow the user to manually set the time of a note (in which case
 		// options.autoTimestamp will be `false`). However note that if the item is later changed, this timestamp
 		// will be set again to the current time.
+		//
+		// The technique to modify user_updated_time while keeping updated_time current (so that sync can happen) is to
+		// manually set updated_time when saving and to set autoTimestamp to false, for example:
+		// Note.save({ id: "...", updated_time: Date.now(), user_updated_time: 1436342618000 }, { autoTimestamp: false })
 		if (options.autoTimestamp && this.hasField('user_updated_time')) {
 			o.user_updated_time = timeNow;
 		}
@@ -468,7 +482,9 @@ class BaseModel {
 	static batchDelete(ids, options = null) {
 		if (!ids.length) return;
 		options = this.modOptions(options);
-		return this.db().exec('DELETE FROM ' + this.tableName() + ' WHERE id IN ("' + ids.join('","') + '")');
+		const idFieldName = options.idFieldName ? options.idFieldName : 'id';
+		const sql = 'DELETE FROM ' + this.tableName() + ' WHERE ' + idFieldName + ' IN ("' + ids.join('","') + '")';
+		return this.db().exec(sql);
 	}	
 
 	static db() {
@@ -494,6 +510,7 @@ BaseModel.typeEnum_ = [
 	['TYPE_MASTER_KEY', 9],
 	['TYPE_ITEM_CHANGE', 10],
 	['TYPE_NOTE_RESOURCE', 11],
+	['TYPE_RESOURCE_LOCAL_STATE', 12],
 ];
 
 for (let i = 0; i < BaseModel.typeEnum_.length; i++) {
